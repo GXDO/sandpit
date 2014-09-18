@@ -1,0 +1,10 @@
+{
+  "name": "sandpit",
+  "description": "Safe JavaScript library.",
+  "version": "0.0.1",
+  "maintainers": [{
+    "name": "Anthony Corcutt",
+    "email": "acorcutt@gmail.com",
+    "web": "http://www.corcutt.com"
+  }]
+}
