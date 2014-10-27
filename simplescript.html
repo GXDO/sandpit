@@ -1,0 +1,458 @@
+<h1>Safe Script</h1>
+<br>Can't use undefined variables
+<br>Can only call allowed or defined functions
+<br>Can't redefine variables
+<br>Cant access or use objects
+TODO
+
+Arrays are dangerous, we can do a['length'] etc to access properties or window['alert'](0) call functions
+So we need to wrap this in our own code.
+Maybe [Integer(identifier)] to force numerical access?
+How would we handle [(1+2)] though? - Maybe add 'int(' on '[' or ',' then ')' on ',' or ']'
+Maybe maintain stack of where we are say '{','(','[','[' so we can check if we accessing array
+Maybe allow some properties .length etc.. or wrap these up as functions length(my_array) push(my_array,2)
+
+<textarea id="script" style="width:100%;height:300px;">
+  var a=0;
+  var b=1.0;
+  
+  c = a * b;
+  
+  if(a==b || a >= c){
+    c = 4 * ((1+22)*3);
+  }
+  
+  
+  if(true){
+    a = 1
+  }else if(false){
+    b = 2
+  }else{
+    c = null
+  }
+  
+  function x(){
+    var c = 2;
+  }
+  
+  var s= "sfsf;+*/-.,!&|^{}()[]sfsaf"
+  
+  var t='sdf"ss""
+  ""dfsft34t'
+    
+function y(p,q,z){
+    var d5 = p+q;
+    return d5;
+  }
+  
+  y(a,b,10.234);
+  
+  while(true){
+    do()
+  }
+  
+  var array = [1,2,3];
+</textarea>
+
+<script type="text/javascript">
+  console.log('Start');
+  
+  var source = document.getElementById('script').value;
+    
+  // REFACTORING  
+  var SCOPE = "SCOPE";  //we scope all our identifiers to this
+  var CONSTANTS = ['true','false','Infinity','undefined','null']; 
+  
+  //TOKENIZER
+  var special = '=;+*/-.,!&|^<>{}()[]'; // Anything that can seperate tokens
+  var empty = ' \t'; //Anything that cab be whitespace 
+  var newline = '\n'; //Newlines
+  var operators = '=!<>&|+-^*%' ;//if starts with any of these can be multi string operators ==, +=, != etc.
+  var quotes = '"\'';
+
+
+  var i = 0;
+  var token = ""; //current token part
+  var line = 0; //line count for errors
+  var quote = '';//for detecting quotes
+
+  //CODE
+  var expecting = ['IDENTIFIER','KEYWORD','LITERAL','EOL'];   //What we expect next - [IDENTIFIER, LITERAL, OPERATOR, EOL] etc
+  
+  var brackets = 0;     //[]
+  var braces = 0 ;      //{}
+  var parenthesis = 0;  //()
+  var last = '';        //Last token 
+  var active = '';      //Last active token (non break)
+  var stack = {};       //stack of identifiers we can use
+  var code = '';
+  var errors = '';
+
+    
+  while(i <= source.length){
+    var char = source.charAt(i);
+
+    if(quote.length > 0){
+      //waiting for quote end
+      if(char==quote){
+        token += quote;
+        addToken(token,i,line);      
+        token='';      
+        quote='';
+      }else{
+        token += char;
+      }    
+    }else if(quotes.indexOf(char)>-1){
+      quote=char;
+      if(token.length >0 ){
+        //End of token        
+        addToken(token,i,line);
+      }
+      //start a new quote with given delimeter
+      token = quote;
+    }else if(newline.indexOf(char)>-1){
+      //Treat newline as a special separator
+      //We handle newlines after quotes so you can have multipline string!
+      if(token.length >0 ){
+        //End of last token   
+        addToken(token,i,line);
+        token = '';
+      }
+      //insert newline
+      addToken(';;',i,line);
+      //Increment line count
+      line++;
+    }else if(empty.indexOf(char)>-1){
+      //Whitespace 
+      if(token.length >0 ){
+        //End of token        
+        addToken(token,i,line);
+        token = '';
+      }else{
+        //Ignore multiple whitespaces
+      }
+    }else if(token.length==0){ // WHY??
+      //Token is empty so start a new one
+      token=char;
+    }else if(special.indexOf(char) > -1){
+      // Char is special
+      if(operators.indexOf(token.charAt(0)) > -1){
+        //token is operator that could be multiple eg != so append
+        token+=char;
+      }else{
+        //token is not multi so start new 
+        addToken(token,i,line);
+      
+        //Start new token
+        token=char;
+      }  
+    }else if(special.indexOf(token.charAt(0)) > -1){
+      //Token is special char is not so start new
+      addToken(token,i,line);
+      token = char;        
+    }else{
+      //Keep appending to token
+      token+=char;
+    }
+    
+    i++;
+  };
+  
+  function getTokenKind(token){
+    if(token==';'||token==';;'){
+      return 'SEPARATOR';      
+    }else if(['var','function','break','return','while','if','else'].indexOf(token) >- 1){
+      return 'KEYWORD';
+    }else if(CONSTANTS.indexOf(token) >- 1){
+      return 'CONSTANT';
+    }else if(['[',']'].indexOf(token) >- 1){
+      return 'BRACKETS';
+    }else if(['{','}'].indexOf(token) >- 1){
+      return 'BRACES';
+    }else if(['(',')'].indexOf(token) >- 1){
+      return 'PARENTHESIS';
+    }else if(token=='='){
+      return 'ASSIGNMENT';
+    }else if(['.',','].indexOf(token) >- 1){
+      return 'PUNCTUATION';
+    }else if(['+','-','*','/','^','%','&','|','<','>','==','!=','>=','<=','&&','||'].indexOf(token) > -1){
+      return 'OPERATOR';
+    }else if(quotes.indexOf(token.charAt(0)) > -1){
+      return 'STRING';
+    }else if(!isNaN(token)){
+      return 'NUMBER';
+    }else{//need to regex this?
+      return 'IDENTIFIER';
+    }//else JUNK
+  }
+          
+  function addToken(token,index,line){
+    console.log('token','`'+token+'`',index,line);  
+    
+    //See what type of token we have
+    var tokenKind = getTokenKind(token);
+    var lastKind = getTokenKind(last);
+    
+    if(['var','function','while'].indexOf(token) >- 1){
+      //Can only go after break or new block
+      if(['',';',';;','{'].indexOf(last) >- 1){
+        code += token;
+        if(token!='while'){
+          code += ' ';
+        }
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }
+    }else if(['return'].indexOf(token) >- 1){
+      //Can only go after break or new block
+      if(['',';',';;','{'].indexOf(last) >- 1){
+        code += token;
+        code += ' ';
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }    
+    }else if(token=='='){
+      // IDENTIFIER = 
+      if(lastKind == 'IDENTIFIER'){
+        code += token;        
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';          
+      }
+    }else if(token=='('){
+      // = (
+      // if(
+      // while(      
+      // function IDENTIFIER(
+      // OPERATOR (
+      // [(
+      // ((
+      if( ['=','if','while','[','('].indexOf(last) >- 1 ||  ['IDENTIFIER','OPERATOR'].indexOf(lastKind) >- 1){
+        code += token;  
+        parenthesis++;            
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+active+'`\n';                
+      }
+    }else if(token==')'){
+      // ()
+      // IDENTIFIER)
+      // CONSTANT
+      // NUMBER)
+      // STRING) ?
+      if( ['('].indexOf(last) >- 1 ||  ['IDENTIFIER','NUMBER','STRING','CONSTANT'].indexOf(lastKind) >- 1){
+        if(parenthesis>0){
+          code += token;  
+          parenthesis--;            
+        }else{
+          errors += 'Error: line ' + line + ' not expecting `'+token+'` before `(`\n';                
+        }  
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+active+'`\n';                
+      }    
+    }else if(token=='{'){
+      // ){
+      // else { 
+      
+      if(active == ')'||active == 'else'){
+        code += token;  
+        braces++;      
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+active+'`\n';          
+      }
+    }else if(token=='}'){
+      //TODO - Check its not in open () [] etc.
+      
+      if(braces>0){
+        code += token;  
+        braces--;            
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` before `{`\n';                
+      }
+    }else if(token==';'){
+      // ;
+      // IDENTIFIER;
+      // STRING;
+      // NUMBER;
+      // CONSTANT;
+      // );
+      // ];
+      // };
+      // {;
+      
+      if( ['',';',';;','{','}',')',']'].indexOf(last) >- 1 ||  ['IDENTIFIER','STRING','NUMBER','CONSTANT'].indexOf(lastKind) >- 1){
+        //Don't output duplicate separators or at the start of blocks or lines
+        if(last!=token && last !='' && last!=';;' && last != '{'){
+          if(token==';'){
+            code += token; 
+          }else{
+            code += '\n'; 
+          }
+        }
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';          
+      }
+    }else if(token==';;'){//newline
+      // ;;
+      // IDENTIFIER;;
+      // STRING;;
+      // NUMBER;;
+      // CONSTANT;;
+      // );;
+      // ];;
+      // };;
+      // {;;
+      
+      if( ['',';',';;','{','}',')',']'].indexOf(last) >- 1 ||  ['IDENTIFIER','STRING','NUMBER','CONSTANT'].indexOf(lastKind) >- 1){
+        //Don't output duplicate newlines or at the start
+        if(last!=token && last !=''){
+          if(token==';'){
+            code += token; 
+          }else{
+            code += '\n'; 
+          }
+        }
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';          
+      }
+    }else if(tokenKind=='IDENTIFIER'){
+      // id
+      // ;id
+      // var id
+      // function id
+      // return id
+      // = id
+      // OPERATOR id
+      // (id
+      // {id
+      // [id
+      // ,id
+      
+      //Add scope to all identifiers
+      if(['var','function'].indexOf(last) >- 1){
+        //TODO - declaration check not duplicate
+        code += SCOPE+'_'+token;
+      }else if(['',';',';;','{','(','[','=',','].indexOf(last) >- 1 || lastKind == 'OPERATOR'){
+        //TODO - not declaration so check its defined  
+        code += SCOPE+'_'+token;
+      }else if(last=='return'){
+        code += SCOPE+'_'+token;      
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }
+    }else if(token=='.'){
+      // NUMBER.
+      if(lastKind == 'NUMBER'){
+        code += token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';   
+      } 
+    }else if(token==','){
+      // (NUMBER,
+      // (STRING,
+      // (CONSTANT,
+      // (IDENTIFIER,
+      // ((),
+      // ([0,0],
+      
+      //Needs to be inside () or []
+      if(brackets>0 || parenthesis > 0){
+        if(['IDENTIFIER','STRING','NUMBER','CONSTANT'].indexOf(lastKind) >- 1 || [')',']'].indexOf(last) >- 1){
+          code += token;
+        }else{
+          errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';   
+        }    
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';   
+      }     
+    }else if(tokenKind=='CONSTANT'){
+      // = CONSTANT
+      // OPERATOR CONSTANT
+      // (CONSTANT
+      // [CONSTANT
+      // ,CONSTANT
+      // return CONSTANT
+      if(['(','[','=',',','return'].indexOf(last) >- 1 || lastKind == 'OPERATOR'){
+        code += token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }
+    }else if(tokenKind=='STRING'){
+      // = STRING
+      // OPERATOR STRING
+      // (STRING
+      // [STRING
+      // ,STRING
+      // return STRING
+      if(['(','[','=',',','return'].indexOf(last) >- 1 || lastKind == 'OPERATOR'){
+        code += token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }
+    }else if(tokenKind=='NUMBER'){
+      // = NUMBER
+      // OPERATOR NUMBER
+      // (NUMBER
+      // [NUMBER
+      // ,NUMBER
+      // return NUMBER
+      // .NUMBER
+      if(['(','[','=',',','.','return'].indexOf(last) >- 1 || lastKind == 'OPERATOR'){
+        code += token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }    }else if(tokenKind=='OPERATOR'){
+      // LITERAL OPERATOR
+      // IDENTIFIER OPERATOR
+      if(last== ')' || lastKind == 'IDENTIFIER' || lastKind == 'STRING' || lastKind == 'NUMBER'){
+        code += token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }      
+    }else if(token=='if'){
+      // if
+      // ;if
+      // ;;if
+      // else if
+      if(['',';',';;'].indexOf(last) >- 1){
+        code += token;
+      }else if(['else'].indexOf(last) >- 1){
+        code += ' ' + token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }   
+    }else if(token=='else'){
+      // }else
+      if(last=='}'){
+        code += token;
+      }else{
+        errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+      }   
+    }else{
+      errors += 'Error: line ' + line + ' not expecting `'+token+'` after `'+last+'`\n';      
+    }
+
+    //Keep track of the last token
+    last = token;
+    
+    //Keep track of last active token before newlines
+    if(token!=';;'){
+      active = token;
+    }
+  }
+
+  if(brackets>0){
+    errors += 'Error: line ' + line + ' missing `]`\n';      
+  }
+  if(braces>0){
+    errors += 'Error: line ' + line + ' missing `}`\n';      
+  }
+  if(parenthesis>0){
+    errors += 'Error: line ' + line + ' missing `)`\n';        
+  }
+  
+  console.log(errors);
+  console.log(code);
+
+  
+  console.log('End');
+  
+</script>

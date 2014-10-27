@@ -1,0 +1,91 @@
+<h1>Sandpit</h1>
+<textarea id="script" style="width:100%;height:300px;">
+  // this is a comment
+
+  var a = 1  // Need to declare all variables
+    
+  b = c + a // Will not allow access to undefined variables
+  
+  c = 4 ; d = 5 // allow ; to separate expressions
+  
+  s = "This is a string"
+  
+  var myVar_123; // Only a-zAZ0-9 and _ characters are allowed in identifiers
+  
+  function fx(a,b,c){
+    // We insert recursion breaks here
+    // if max_recursions (or timeout?? run>10sec ) then throw error
+  
+    //Cant define functions inside any other blocks
+    function wontWork(){
+    
+    }
+    
+    x = a*b
+  
+    return x + y
+  }
+  
+  z = fx(1,2,3)
+  
+  if(true){
+    console.log('true') # call an externally defined function
+  }else if(false){
+    console.log("false")
+  }else{
+    console.log('err??')
+  }
+  
+  var x = 0
+  while(x != 100){ // Our while loops & function calls will have automatic breaking to prevent stuck & recursion loops
+    // Insert if limit_reached then throw error
+    if(x==99)
+      break
+    end
+    x++
+  end
+  
+  for(var i=0;i!=20;i++)
+
+  end
+  
+  var a = ['a','b','c']
+  
+  a[0] // Arrays can only be accessed by integer index, we insert [parseInt(literal)] internally
+  
+  a['window'] // So you cant hack access to the window etc.
+  
+  
+  var window = true // This would mess up as you would have access to the window object
+                    // So internally we prefix all identifiers to prevent this -  var PREFIX__window = true
+  
+  // All external functions and variables must be passed and accessed as objects
+  
+  Console.log()
+  Console.version
+  
+  Math.abs(5.3)
+  Math.sum([1,2,3])
+  
+  Array.push(a,2)
+  Array.length(a)
+  
+  String.length(s)
+  String.split(s)
+  String.join(a)
+  
+  
+  // You can send in custom objects or functions
+  Settings.width
+  
+  Canvas.line(0,0,100,100)
+  
+  // Accessing the object will return true or undefined
+  if(Canvas==true)
+    Canvas.point(0,0)
+  end 
+  
+  // These will all be prefixed internally to prevent collisions with js objects
+  // SANDCASTLE__Math.abs = function(n){return Math.abs(n)}
+  
+</textarea>

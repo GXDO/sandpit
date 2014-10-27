@@ -6,5 +6,22 @@
     "name": "Anthony Corcutt",
     "email": "acorcutt@gmail.com",
     "web": "http://www.corcutt.com"
-  }]
+  }],
+  "homepage": "https://github.com/gxdo/sandpit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gxdo/sandpit.git"
+  },  
+  "main": "./index",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "gulp": "latest"
+  },
+  "scripts": {
+    "build": "gulp",
+    "watch": "gulp watch",
+    "test": "mocha test --recursive"
+  }
 }
