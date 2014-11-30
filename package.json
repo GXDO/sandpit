@@ -2,25 +2,31 @@
   "name": "sandpit",
   "description": "Safe JavaScript library.",
   "version": "0.0.1",
-  "maintainers": [{
-    "name": "Anthony Corcutt",
-    "email": "acorcutt@gmail.com",
-    "web": "http://www.corcutt.com"
-  }],
+  "maintainers": [
+    {
+      "name": "Anthony Corcutt",
+      "email": "acorcutt@gmail.com",
+      "web": "http://www.corcutt.com"
+    }
+  ],
   "homepage": "https://github.com/gxdo/sandpit",
   "repository": {
     "type": "git",
     "url": "https://github.com/gxdo/sandpit.git"
-  },  
-  "main": "./index",
-  "dependencies": {
   },
+  "main": "./index",
+  "dependencies": {},
   "devDependencies": {
+    "gulp": "latest",
+    "gulp-mocha": "^2.0.0",
+    "gulp-peg": "^0.1.2",
+    "gulp-util": "^3.0.1",
     "mocha": "latest",
-    "gulp": "latest"
+    "pegjs": "^0.8.0"
   },
   "scripts": {
-    "build": "gulp",
+    "all": "gulp",
+    "build": "gulp build",
     "watch": "gulp watch",
     "test": "mocha test --recursive"
   }

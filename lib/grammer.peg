@@ -1,0 +1,66 @@
+Start
+  = __ statements:Statement* __ { return statements; }
+  
+Whitespace "whitespace" 
+  = "\t"
+  / "\v"
+  / "\f"
+  / " "
+
+Newline "end of line"
+  = "\n"
+  / "\r\n"
+  / "\r"
+  
+Comment "comment"
+  = "//" (!Newline .)*
+  
+_ = Whitespace*
+
+__ = (Whitespace / Newline / Comment)*
+
+
+Block "block"
+  = __ "{" __ statements:Statement* __ "}" __
+       { return statements ;}
+
+Statement "statement"
+  = Declaration
+  / Assignment
+  / While
+  / If
+
+Declaration
+  = "var " _ v:Identifier _ "=" _ e:Expression _ ";" __
+        { return { tag:"var", name:v, expression:e}; }
+
+Assignment
+  = i:Identifier _ "=" _ e:Expression _ ";" __
+      { return { tag:"assignment", name:i, expression:e};}
+      
+While
+  = "while" _ "(" _ e:Expression _ ")" __ b:Block
+       { return {tag:"while", expression:e, block:b}; }
+
+If
+  = "if" _ "(" _ e:Expression _ ")" 
+        __ b:Block __
+    "else"
+        __ a:(Block / If) __
+    { return {tag:"if", expression:e, block:b,else:a}; }
+  / "if" _ "(" _ e:Expression _ ")" 
+        __ b:Block __
+    { return {tag:"if", expression:e, block:b,else:null}; }
+
+ReservedWord
+  = "var"
+  / "function"
+
+Identifier "identifier"
+  = !ReservedWord name:IdentifierName { return name; }
+
+IdentifierName
+  = first:[a-zA-Z] char:[a-zA-Z0-9]* { return first + char.join('')}
+
+Expression
+  = [0-9]

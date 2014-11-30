@@ -1,28 +1,65 @@
-var sandpit = require('../index.js');
+var Sandpit = require('../index.js');
 var assert = require("assert");
 var fs = require("fs");
+var package = require("../package.json");
 
-describe('Parse', function(){
-    it('should parse this function', function(){
-      //Add some globals
-      sandpit.globals({
-        Math : {
-          PI : Math.PI,
-          random : function(){Math.random();},
-          abs : function(n){Math.abs(n);}
-        } 
-      });
+var Parser = require('../lib/grammer.js');
 
-      var func = sandpit.parse(fs.readFileSync('./examples/hello.js', 'utf8'),{x:1,y:2});
+
+describe('Peg', function(){
+    it('should parse', function(){
+      var parsed = Parser.parse(fs.readFileSync('./examples/syntax.js', 'utf8'));
+      console.log(parsed);
       
-      //Create function with locals
-      //Note to test escape string you need to double escape
-      //var func = sandpit.parse('console.log("Hello \\"You\\" ",Math.PI);',{x:1,y:2});
-     
-
-      //Call with custom locals
-      //func({y:3});
-
-      assert.equal(1,1);
+      assert.equal(true,true);
+      
     });
 });
+
+/*
+describe('Constructor', function(){
+    
+
+    it('should output correct version', function(){      
+      assert.equal(Sandpit.version,package.version);
+    });
+
+    it('should throw or return an error calling run with no script', function(){
+      var sandpit = new Sandpit();    
+
+      assert.throws(function(){sandpit.run()},Error,'should throw error');
+      
+      sandpit.run(function(e,result){
+        assert.ok(e,'should return error');
+      });
+      
+    });
+
+    it('should return "Hello World!"', function(){
+      var sandpit = new Sandpit();    
+
+      sandpit.parse(fs.readFileSync('./examples/hello.js', 'utf8'));
+      
+      sandpit.run(function(e,result){
+        assert.equal(result,'Hello World!','should return async');
+      });
+      
+      assert.equal(sandpit.run(),'Hello World!','should return sync');
+      
+    });
+
+});
+
+
+describe('Syntax', function(){
+    it('should compile', function(){
+      var sandpit = new Sandpit();    
+
+      sandpit.parse(fs.readFileSync('./examples/syntax.js', 'utf8'));
+      
+    
+      assert.equal(sandpit.run(),true);
+      
+    });
+});
+*/

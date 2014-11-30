@@ -1,0 +1,37 @@
+<script>
+  //Quick test to run long running function as async and break on timeout
+  var t = Date.now();
+  
+  function timeout(){
+    if((Date.now()-t) > 1000){
+        throw 'Timeout';
+    }
+  }
+  
+  function long(a,callback){
+    try{
+      for(var i=0;i<10000;i++){
+        timeout();
+      
+        document.write('tick('+i+')<br>');
+      }
+      
+      callback(null,a);
+    }
+    catch(e){
+      console.log('Timeout');
+      callback('Timeout',null);
+    }
+  }
+  function callback (err,result){
+    console.log('Response',err,result);  
+  }
+  function run(message,callback){
+    setTimeout(function(){long(message,callback)},0);
+  }
+  
+  console.log('Start');
+  run('Hello',callback);
+  console.log('End');
+  
+</script>
